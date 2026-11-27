@@ -1,0 +1,1118 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجري - كتالوج وإدارة المنتجات</title>
+    <!-- تحميل خط تجوال العربي الأنيق -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <!-- تحميل Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- تحميل أيقونات Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col selection:bg-primary-100 selection:text-primary-700">
+
+    <!-- الشريط العلوي (Navbar) -->
+    <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap items-center justify-between h-auto py-3 sm:h-20 gap-4">
+                <!-- الشعار والعنوان -->
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-primary-600 to-indigo-500 text-white flex items-center justify-center shadow-lg shadow-primary-500/30">
+                        <i data-lucide="store" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">كتالوج متجري</h1>
+                        <p class="text-xs text-slate-500 hidden sm:block">نظام عرض وإدارة المنتجات الذكي</p>
+                    </div>
+                </div>
+
+                <!-- أدوات التحكم السريعة -->
+                <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+                    <!-- زر تبديل وضع الإدارة -->
+                    <button id="toggleAdminBtn" onclick="toggleAdminMode()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 border bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200">
+                        <i data-lucide="shield" class="w-4 h-4"></i>
+                        <span id="adminBtnText">وضع الإدارة: مغلق</span>
+                    </button>
+
+                    <!-- زر إضافة منتج جديد (يظهر بقوة في وضع الإدارة أو متاح دائماً للسهولة) -->
+                    <button onclick="openProductModal()" class="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm bg-primary-600 text-white hover:bg-primary-700 shadow-md shadow-primary-600/20 transition-all duration-200 active:scale-95">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>إضافة منتج</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- شريط الإحصائيات وأدوات النسخ الاحتياطي (يظهر عند تفعيل وضع الإدارة) -->
+    <div id="adminToolbar" class="hidden bg-indigo-950 text-white border-b border-indigo-900 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-4 text-sm">
+                <span class="flex items-center gap-1.5 bg-indigo-900/80 px-3 py-1.5 rounded-lg border border-indigo-700/50">
+                    <i data-lucide="package" class="w-4 h-4 text-indigo-300"></i>
+                    إجمالي المنتجات: <strong id="totalProductsCount" class="text-white">0</strong>
+                </span>
+                <span class="hidden md:flex items-center gap-1.5 text-indigo-200 text-xs">
+                    <i data-lucide="info" class="w-4 h-4"></i>
+                    يمكنك الآن تعديل أو حذف أي منتج مباشرة من بطاقته بالأسفل.
+                </span>
+            </div>
+
+            <!-- أزرار التصدير والاستيراد -->
+            <div class="flex items-center gap-2">
+                <button onclick="exportData()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-800 hover:bg-indigo-700 text-indigo-100 border border-indigo-700 transition">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                    تصدير JSON
+                </button>
+                <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-indigo-800 hover:bg-indigo-700 text-indigo-100 border border-indigo-700 transition cursor-pointer">
+                    <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                    استيراد JSON
+                    <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importData(event)">
+                </label>
+                <button onclick="openResetConfirmModal()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/30 transition" title="استعادة البيانات الافتراضية">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    <span class="hidden sm:inline">إعادة ضبط</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- قسم البحث والتصفية -->
+        <section class="bg-white p-4 sm:p-6 rounded-3xl shadow-sm border border-slate-200/80 mb-8">
+            <div class="flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center">
+                
+                <!-- حقل البحث الفوري -->
+                <div class="relative flex-grow max-w-xl">
+                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                        <i data-lucide="search" class="w-5 h-5"></i>
+                    </div>
+                    <input type="text" id="searchInput" oninput="filterProducts()" placeholder="ابحث باسم المنتج، الوصف، أو الكلمات المفتاحية..." 
+                        class="w-full pr-11 pl-10 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-all">
+                    <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 hover:text-slate-600">
+                        <i data-lucide="x-circle" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <!-- ترتيب النتائج -->
+                <div class="flex items-center gap-2 self-end lg:self-auto">
+                    <label for="sortSelect" class="text-xs font-bold text-slate-500 whitespace-nowrap">ترتيب حسب:</label>
+                    <select id="sortSelect" onchange="filterProducts()" class="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        <option value="newest">الأحدث إضافة</option>
+                        <option value="price-asc">السعر: من الأقل للأعلى</option>
+                        <option value="price-desc">السعر: من الأعلى للأقل</option>
+                        <option value="name">الاسم (أ - ي)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- أزرار تصفية الفئات -->
+            <div class="mt-5 pt-4 border-t border-slate-100">
+                <div class="flex items-center justify-between mb-2.5">
+                    <span class="text-xs font-extrabold text-slate-500 flex items-center gap-1.5">
+                        <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-primary-600"></i>
+                        تصفح حسب القسم (التصنيف):
+                    </span>
+                    <span id="activeFilterBadge" class="text-xs font-bold text-primary-600 bg-primary-50 px-2.5 py-0.5 rounded-full">
+                        عرض جميع الأقسام مقسمة
+                    </span>
+                </div>
+                <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar" id="categoryFilters">
+                    <!-- يتم توليد الفئات ديناميكياً هنا -->
+                </div>
+            </div>
+        </section>
+
+        <!-- حاوية عرض المنتجات (مقسمة حسب الأقسام أو مخصصة لقسم واحد) -->
+        <section id="catalogContainer" class="space-y-10">
+            <!-- يتم حقن الأقسام وبطاقات المنتجات هنا -->
+        </section>
+
+        <!-- حالة عدم وجود نتائج -->
+        <div id="emptyState" class="hidden text-center py-16 px-4 bg-white rounded-3xl border border-dashed border-slate-300">
+            <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="search-x" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">لا توجد منتجات مطابقة</h3>
+            <p class="text-sm text-slate-500 mb-6 max-w-md mx-auto">لم نتمكن من العثور على أي منتجات تطابق بحثك أو القسم المحدد. جرب تغيير كلمات البحث أو أضف منتجاً جديداً.</p>
+            <button onclick="resetFilters()" class="px-5 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-xl hover:bg-slate-800 transition">
+                عرض جميع الأقسام
+            </button>
+        </div>
+    </main>
+
+    <!-- التذييل (Footer) -->
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
+            <p>© 2026 كتالوج متجري. جميع البيانات محفوظة محلياً في متصفحك تلقائياً.</p>
+            <div class="flex items-center gap-4">
+                <span class="flex items-center gap-1 text-emerald-600 font-medium text-xs bg-emerald-50 px-2.5 py-1 rounded-full">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    الحفظ التلقائي نشط
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- نافذة إضافة / تعديل منتج (Modal) -->
+    <div id="productModal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <!-- خلفية معتمة -->
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeProductModal()"></div>
+
+            <!-- محتوى النافذة -->
+            <div class="relative inline-block w-full max-w-lg p-6 sm:p-8 my-8 overflow-hidden text-right align-middle transition-all transform bg-white shadow-2xl rounded-3xl border border-slate-100">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <h3 id="modalTitle" class="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="package-plus" class="w-6 h-6 text-primary-600"></i>
+                        <span>إضافة منتج جديد</span>
+                    </h3>
+                    <button onclick="closeProductModal()" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <form id="productForm" onsubmit="handleProductSubmit(event)" class="mt-5 space-y-4">
+                    <input type="hidden" id="productId">
+
+                    <!-- اسم المنتج -->
+                    <div>
+                        <label for="productName" class="block text-sm font-bold text-slate-700 mb-1">اسم المنتج <span class="text-rose-500">*</span></label>
+                        <input type="text" id="productName" required placeholder="مثال: سماعات رأس لاسلكية احترافية"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition">
+                    </div>
+
+                    <!-- السعر والفئة -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="productPrice" class="block text-sm font-bold text-slate-700 mb-1">السعر (ج.م) <span class="text-rose-500">*</span></label>
+                            <input type="number" id="productPrice" required min="0" step="0.01" placeholder="1500.00"
+                                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition">
+                        </div>
+
+                        <div>
+                            <label for="productCategory" class="block text-sm font-bold text-slate-700 mb-1">القسم (التصنيف) <span class="text-rose-500">*</span></label>
+                            <select id="productCategory" onchange="handleCategorySelectChange()" required
+                                class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition">
+                                <!-- يتم تعبئة الأقسام ديناميكياً -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- حقل إضافة قسم جديد (يظهر عند اختيار "إضافة قسم جديد") -->
+                    <div id="newCategoryWrapper" class="hidden bg-primary-50/70 p-3.5 rounded-2xl border border-primary-200/80">
+                        <label for="newCategoryInput" class="block text-xs font-extrabold text-primary-800 mb-1.5 flex items-center gap-1">
+                            <i data-lucide="folder-plus" class="w-3.5 h-3.5"></i>
+                            اسم القسم الجديد <span class="text-rose-500">*</span>
+                        </label>
+                        <input type="text" id="newCategoryInput" placeholder="مثال: أحذية، نظارات، عطور..."
+                            class="w-full px-3.5 py-2 bg-white border border-primary-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition">
+                    </div>
+
+                    <!-- رابط الصورة + زر توليد صورة افتراضية ذكية -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label for="productImage" class="block text-sm font-bold text-slate-700">رابط الصورة (اختياري)</label>
+                            <button type="button" onclick="generateSmartImage()" class="text-xs font-bold text-primary-600 hover:text-primary-700 flex items-center gap-1">
+                                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                                توليد صورة ذكية
+                            </button>
+                        </div>
+                        <input type="url" id="productImage" oninput="updateImagePreview()" placeholder="https://example.com/image.jpg (اتركه فارغاً لصورة تلقائية)"
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition text-left" dir="ltr">
+                        
+                        <!-- معاينة مصغرة للصورة -->
+                        <div class="mt-2 flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-200/70">
+                            <img id="imagePreview" src="https://placehold.co/100x100/e0e7ff/4f46e5?text=معاينة" alt="معاينة" class="w-12 h-12 rounded-lg object-cover bg-white border border-slate-200">
+                            <span class="text-xs text-slate-500">سيتم إنشاء صورة افتراضية أنيقة باسم المنتج تلقائياً إذا تركت الحقل فارغاً.</span>
+                        </div>
+                    </div>
+
+                    <!-- وصف المنتج -->
+                    <div>
+                        <label for="productDescription" class="block text-sm font-bold text-slate-700 mb-1">وصف المنتج <span class="text-rose-500">*</span></label>
+                        <textarea id="productDescription" required rows="3" placeholder="اكتب وصفاً جذاباً يوضح مميزات ومواصفات المنتج..."
+                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition resize-none"></textarea>
+                    </div>
+
+                    <!-- أزرار الحفظ والإلغاء -->
+                    <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                        <button type="button" onclick="closeProductModal()" class="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition">
+                            إلغاء
+                        </button>
+                        <button type="submit" class="px-6 py-2.5 rounded-xl text-sm font-bold bg-primary-600 text-white hover:bg-primary-700 shadow-lg shadow-primary-600/25 transition flex items-center gap-2">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            <span id="submitBtnText">حفظ المنتج</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة عرض تفاصيل المنتج (Quick View Modal) -->
+    <div id="detailsModal" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeDetailsModal()"></div>
+            <div class="relative inline-block w-full max-w-2xl overflow-hidden text-right align-middle transition-all transform bg-white shadow-2xl rounded-3xl border border-slate-100">
+                <button onclick="closeDetailsModal()" class="absolute top-4 left-4 z-10 p-2 bg-white/80 backdrop-blur text-slate-600 hover:text-slate-900 rounded-full shadow-md transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+                <div id="detailsContent" class="grid grid-cols-1 md:grid-cols-2">
+                    <!-- يتم حقن التفاصيل هنا -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تأكيد الحذف / إعادة الضبط (Custom Confirm Modal) -->
+    <div id="confirmModal" class="fixed inset-0 z-50 hidden overflow-y-auto" role="dialog" aria-modal="true">
+        <div class="flex items-center justify-center min-h-screen px-4 text-center">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeConfirmModal()"></div>
+            <div class="relative inline-block w-full max-w-sm p-6 overflow-hidden text-center align-middle transition-all transform bg-white shadow-2xl rounded-3xl">
+                <div class="w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="alert-triangle" class="w-7 h-7"></i>
+                </div>
+                <h3 id="confirmTitle" class="text-lg font-extrabold text-slate-900 mb-2">تأكيد الحذف</h3>
+                <p id="confirmMessage" class="text-sm text-slate-500 mb-6">هل أنت متأكد من رغبتك في حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.</p>
+                <div class="flex items-center justify-center gap-3">
+                    <button onclick="closeConfirmModal()" class="flex-1 py-2.5 px-4 rounded-xl text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition">
+                        تراجع
+                    </button>
+                    <button id="confirmActionBtn" class="flex-1 py-2.5 px-4 rounded-xl text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-lg shadow-rose-600/20 transition">
+                        نعم، نفّذ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- إشعار منبثق (Toast Notification) -->
+    <div id="toast" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 text-sm font-medium border border-slate-700">
+            <i id="toastIcon" data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+            <span id="toastMessage">تمت العملية بنجاح</span>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. إدارة الحالة والبيانات الافتراضية
+        // ==========================================
+        const STORAGE_KEY = 'arabic_product_catalog_sections_v2';
+        
+        // الأقسام الأساسية للمتجر
+        const CORE_CATEGORIES = ['الشنط', 'الساعات', 'الإكسسوارات', 'الإلكترونيات', 'الملابس'];
+
+        // بيانات افتراضية منظمة حسب الأقسام (الشنط، الساعات، إلخ) بالجنيه المصري
+        const DEFAULT_PRODUCTS = [
+            // قسم الشنط
+            {
+                id: 'prod-bag-1',
+                name: 'شنطة يد جلد طبيعي كلاسيكية',
+                price: 1850,
+                category: 'الشنط',
+                description: 'شنطة يد أنيقة مصنوعة من الجلد الطبيعي الفاخر مع تقسيمات داخلية منظمة وحزام كتف قابل للإزالة.',
+                image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=600&q=80',
+                createdAt: Date.now() - 100000
+            },
+            {
+                id: 'prod-bag-2',
+                name: 'شنطة ظهر ذكية للأعمال واللابتوب',
+                price: 1350,
+                category: 'الشنط',
+                description: 'مزودة بمنفذ شحن USB مدمج وجيوب مبطنة لحماية اللابتوب حتى 16 بوصة مع خامة مقاومة للماء.',
+                image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=600&q=80',
+                createdAt: Date.now() - 150000
+            },
+            {
+                id: 'prod-bag-3',
+                name: 'شنطة كروس عصرية خفيفة الوزن',
+                price: 920,
+                category: 'الشنط',
+                description: 'تصميم عملي مريح للاستخدام اليومي والسفر مع سحابات معدنية متينة وجيوب آمنة للمقتنيات.',
+                image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=600&q=80',
+                createdAt: Date.now() - 180000
+            },
+            // قسم الساعات
+            {
+                id: 'prod-watch-1',
+                name: 'ساعة يد كلاسيكية فاخرة ستانلس ستيل',
+                price: 2750,
+                category: 'الساعات',
+                description: 'تصميم راقٍ بإطار من الفولاذ المقاوم للصدأ وزجاج مقاوم للخدش مع مقاومة للماء حتى 50 متر.',
+                image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80',
+                createdAt: Date.now() - 200000
+            },
+            {
+                id: 'prod-watch-2',
+                name: 'ساعة ذكية رياضية بشاشة AMOLED',
+                price: 3200,
+                category: 'الساعات',
+                description: 'تتبع دقيق للنبض والنشاط الرياضي مع استقبال المكالمات وبطارية تدوم حتى 10 أيام بشحنة واحدة.',
+                image: 'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&w=600&q=80',
+                createdAt: Date.now() - 250000
+            },
+            {
+                id: 'prod-watch-3',
+                name: 'ساعة جلدية أنيقة بميناء أزرق',
+                price: 1950,
+                category: 'الساعات',
+                description: 'سوار من الجلد الطبيعي الفاخر مع عقارب مضيئة في الظلام وتصميم يناسب الإطلالات الرسمية والكاجوال.',
+                image: 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?auto=format&fit=crop&w=600&q=80',
+                createdAt: Date.now() - 280000
+            },
+            // قسم الإلكترونيات
+            {
+                id: 'prod-elec-1',
+                name: 'سماعات رأس لاسلكية عازلة للضوضاء',
+                price: 3450,
+                category: 'الإلكترونيات',
+                description: 'تجربة صوتية نقية مع تقنية إلغاء الضوضاء النشط وبطارية تدوم حتى 35 ساعة من التشغيل المتواصل.',
+                image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80',
+                createdAt: Date.now() - 300000
+            },
+            // قسم الإكسسوارات
+            {
+                id: 'prod-acc-1',
+                name: 'نظارة شمسية مستقطبة بإطار معدني',
+                price: 850,
+                category: 'الإكسسوارات',
+                description: 'حماية كاملة من الأشعة فوق البنفسجية UV400 مع عدسات مستقطبة تمنع الانعكاسات وتوفر رؤية واضحة.',
+                image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?auto=format&fit=crop&w=600&q=80',
+                createdAt: Date.now() - 400000
+            }
+        ];
+
+        let products = [];
+        let isAdminMode = false;
+        let selectedCategory = 'الكل';
+
+        // ==========================================
+        // 2. التهيئة والتخزين المحلي (LocalStorage)
+        // ==========================================
+        function initApp() {
+            loadProductsFromStorage();
+            renderCategories();
+            populateCategorySelect();
+            filterProducts();
+            lucide.createIcons();
+        }
+
+        function loadProductsFromStorage() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (stored) {
+                    products = JSON.parse(stored);
+                } else {
+                    products = [...DEFAULT_PRODUCTS];
+                    saveProductsToStorage();
+                }
+            } catch (error) {
+                console.error('خطأ في قراءة البيانات:', error);
+                products = [...DEFAULT_PRODUCTS];
+            }
+        }
+
+        function saveProductsToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+                updateStats();
+            } catch (error) {
+                showToast('حدث خطأ أثناء حفظ البيانات محلياً', 'error');
+            }
+        }
+
+        function updateStats() {
+            const countEl = document.getElementById('totalProductsCount');
+            if (countEl) countEl.textContent = products.length;
+        }
+
+        // ==========================================
+        // 3. وضع الإدارة (Admin Mode)
+        // ==========================================
+        function toggleAdminMode() {
+            isAdminMode = !isAdminMode;
+            const btn = document.getElementById('toggleAdminBtn');
+            const btnText = document.getElementById('adminBtnText');
+            const toolbar = document.getElementById('adminToolbar');
+
+            if (isAdminMode) {
+                btn.className = 'flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 border bg-indigo-950 text-white border-indigo-900 shadow-md';
+                btnText.textContent = 'وضع الإدارة: مُفعّل';
+                toolbar.classList.remove('hidden');
+                showToast('تم تفعيل وضع الإدارة: يمكنك التعديل والحذف الآن');
+            } else {
+                btn.className = 'flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 border bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
+                btnText.textContent = 'وضع الإدارة: مغلق';
+                toolbar.classList.add('hidden');
+            }
+
+            updateStats();
+            filterProducts();
+        }
+
+        // ==========================================
+        // 4. الفئات والبحث والتصفية
+        // ==========================================
+        function getAllUniqueCategories() {
+            const productCategories = products.map(p => p.category.trim()).filter(Boolean);
+            return [...new Set([...CORE_CATEGORIES, ...productCategories])];
+        }
+
+        function getCategoryIcon(category) {
+            const icons = {
+                'الكل': 'layers',
+                'الشنط': 'shopping-bag',
+                'الساعات': 'watch',
+                'الإكسسوارات': 'gem',
+                'الإلكترونيات': 'headphones',
+                'الملابس': 'shirt'
+            };
+            return icons[category] || 'tag';
+        }
+
+        function renderCategories() {
+            const categoriesContainer = document.getElementById('categoryFilters');
+            const allCategories = ['الكل', ...getAllUniqueCategories()];
+
+            categoriesContainer.innerHTML = allCategories.map(cat => {
+                const isActive = selectedCategory === cat;
+                const count = cat === 'الكل' ? products.length : products.filter(p => p.category === cat).length;
+                const iconName = getCategoryIcon(cat);
+                
+                return `
+                    <button onclick="selectCategory('${cat.replace(/'/g, "\\'")}')" 
+                        class="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap transition-all duration-200 border ${
+                            isActive 
+                            ? 'bg-primary-600 text-white border-primary-600 shadow-md shadow-primary-600/20 scale-[1.02]' 
+                            : 'bg-slate-50 text-slate-700 border-slate-200/80 hover:bg-slate-100 hover:border-slate-300'
+                        }">
+                        <i data-lucide="${iconName}" class="w-4 h-4 ${isActive ? 'text-white' : 'text-primary-600'}"></i>
+                        <span>${cat === 'الكل' ? 'جميع الأقسام' : 'قسم ' + cat}</span>
+                        <span class="text-xs px-2 py-0.5 rounded-full font-extrabold ${isActive ? 'bg-white/20 text-white' : 'bg-white text-slate-600 border border-slate-200/60'}">${count}</span>
+                    </button>
+                `;
+            }).join('');
+
+            // تحديث شارة القسم النشط
+            const badge = document.getElementById('activeFilterBadge');
+            if (badge) {
+                badge.textContent = selectedCategory === 'الكل' 
+                    ? 'عرض جميع الأقسام منظمة' 
+                    : `تصفية حصرية: قسم ${selectedCategory}`;
+            }
+
+            lucide.createIcons();
+        }
+
+        function selectCategory(category) {
+            selectedCategory = category;
+            renderCategories();
+            filterProducts();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            filterProducts();
+        }
+
+        function resetFilters() {
+            selectedCategory = 'الكل';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('sortSelect').value = 'newest';
+            renderCategories();
+            filterProducts();
+        }
+
+        function filterProducts() {
+            const query = document.getElementById('searchInput').value.trim().toLowerCase();
+            const sortBy = document.getElementById('sortSelect').value;
+            const clearBtn = document.getElementById('clearSearchBtn');
+
+            if (query.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+
+            // 1. التصفية حسب الفئة والبحث
+            let filtered = products.filter(product => {
+                const matchesCategory = selectedCategory === 'الكل' || product.category === selectedCategory;
+                const matchesSearch = product.name.toLowerCase().includes(query) || 
+                                      product.description.toLowerCase().includes(query) ||
+                                      product.category.toLowerCase().includes(query);
+                return matchesCategory && matchesSearch;
+            });
+
+            // 2. الترتيب
+            filtered.sort((a, b) => {
+                if (sortBy === 'price-asc') return a.price - b.price;
+                if (sortBy === 'price-desc') return b.price - a.price;
+                if (sortBy === 'name') return a.name.localeCompare(b.name, 'ar');
+                return (b.createdAt || 0) - (a.createdAt || 0); // الأحدث
+            });
+
+            renderCatalogView(filtered);
+        }
+
+        // ==========================================
+        // 5. عرض البطاقات والأقسام المنظمة (Rendering)
+        // ==========================================
+        function getSmartFallbackImage(name, category) {
+            const colors = {
+                'الشنط': 'd97706',
+                'الساعات': '0284c7',
+                'الإلكترونيات': '4f46e5',
+                'الملابس': '059669',
+                'الإكسسوارات': 'db2777'
+            };
+            const bg = colors[category] || '4f46e5';
+            const encodedText = encodeURIComponent(name.slice(0, 20));
+            return `https://placehold.co/600x450/${bg}/ffffff?text=${encodedText}`;
+        }
+
+        function createProductCardHtml(product) {
+            const fallbackUrl = getSmartFallbackImage(product.name, product.category);
+            const imgUrl = product.image && product.image.trim() !== '' ? product.image : fallbackUrl;
+
+            const adminActionsHtml = isAdminMode ? `
+                <div class="flex items-center gap-2 pt-3 mt-3 border-t border-slate-100">
+                    <button onclick="openProductModal('${product.id}')" class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200/80 transition">
+                        <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                        تعديل
+                    </button>
+                    <button onclick="confirmDeleteProduct('${product.id}', '${product.name.replace(/'/g, "\\'")}')" class="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/80 transition">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        حذف
+                    </button>
+                </div>
+            ` : '';
+
+            return `
+                <article class="group bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col">
+                    <!-- صورة المنتج -->
+                    <div class="relative aspect-[4/3] bg-slate-100 overflow-hidden cursor-pointer" onclick="openDetailsModal('${product.id}')">
+                        <img src="${imgUrl}" alt="${product.name}" 
+                            onerror="this.onerror=null; this.src='${fallbackUrl}';"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        
+                        <!-- شارة الفئة -->
+                        <span class="absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-bold bg-white/95 backdrop-blur-md text-slate-800 shadow-sm border border-slate-100">
+                            ${product.category}
+                        </span>
+
+                        <!-- زر معاينة سريعة عند التحويم -->
+                        <div class="absolute inset-0 bg-slate-900/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span class="bg-white/95 text-slate-900 text-xs font-bold px-4 py-2 rounded-full shadow-lg flex items-center gap-1.5">
+                                <i data-lucide="eye" class="w-3.5 h-3.5 text-primary-600"></i>
+                                عرض التفاصيل
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- محتوى البطاقة -->
+                    <div class="p-5 flex-grow flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between gap-2 mb-2">
+                                <h3 onclick="openDetailsModal('${product.id}')" class="font-extrabold text-slate-900 text-base leading-snug line-clamp-1 cursor-pointer hover:text-primary-600 transition">
+                                    ${product.name}
+                                </h3>
+                            </div>
+                            <p class="text-slate-500 text-xs leading-relaxed line-clamp-2 mb-4">
+                                ${product.description}
+                            </p>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-xl font-extrabold text-primary-600">${Number(product.price).toLocaleString('ar-EG')}</span>
+                                    <span class="text-xs font-bold text-slate-400">ج.م</span>
+                                </div>
+                                <button onclick="openDetailsModal('${product.id}')" class="text-xs font-bold text-slate-500 hover:text-primary-600 flex items-center gap-1 transition">
+                                    التفاصيل
+                                    <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                            ${adminActionsHtml}
+                        </div>
+                    </div>
+                </article>
+            `;
+        }
+
+        function renderCatalogView(items) {
+            const container = document.getElementById('catalogContainer');
+            const emptyState = document.getElementById('emptyState');
+
+            if (items.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                lucide.createIcons();
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            // الحالة الأولى: المستخدم اختار قسماً محدداً (مثل: قسم الشنط فقط أو قسم الساعات فقط)
+            if (selectedCategory !== 'الكل') {
+                const iconName = getCategoryIcon(selectedCategory);
+                container.innerHTML = `
+                    <div class="bg-white/60 p-5 sm:p-7 rounded-3xl border border-slate-200/80 shadow-sm">
+                        <div class="flex flex-wrap items-center justify-between gap-4 pb-5 mb-6 border-b border-slate-200/80">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-2xl bg-primary-600 text-white flex items-center justify-center shadow-md shadow-primary-600/20">
+                                    <i data-lucide="${iconName}" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">قسم ${selectedCategory}</h2>
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-primary-100 text-primary-700">
+                                            ${items.length} منتج
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-0.5">عرض حصري لجميع المنتجات المصنفة ضمن قسم ${selectedCategory}</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <button onclick="openProductModal(null, '${selectedCategory.replace(/'/g, "\\'")}')" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200 transition">
+                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                                    إضافة في هذا القسم
+                                </button>
+                                <button onclick="selectCategory('الكل')" class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+                                    <i data-lucide="layers" class="w-3.5 h-3.5"></i>
+                                    كل الأقسام
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            ${items.map(product => createProductCardHtml(product)).join('')}
+                        </div>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            // الحالة الثانية: وضع "عرض الكل" -> تقسيم المنتجات إلى أقسام مستقلة ومنظمة (سكشن للشنط، سكشن للساعات، إلخ)
+            const activeCategories = getAllUniqueCategories().filter(cat => 
+                items.some(item => item.category === cat)
+            );
+
+            container.innerHTML = activeCategories.map(category => {
+                const categoryItems = items.filter(item => item.category === category);
+                const iconName = getCategoryIcon(category);
+
+                return `
+                    <div class="bg-white/60 p-5 sm:p-7 rounded-3xl border border-slate-200/80 shadow-sm">
+                        <!-- ترويسة القسم -->
+                        <div class="flex flex-wrap items-center justify-between gap-4 pb-4 mb-6 border-b border-slate-200/80">
+                            <div class="flex items-center gap-3">
+                                <div class="w-11 h-11 rounded-2xl bg-primary-50 text-primary-600 border border-primary-100 flex items-center justify-center">
+                                    <i data-lucide="${iconName}" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2.5">
+                                        <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">قسم ${category}</h2>
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-200/70 text-slate-700">
+                                            ${categoryItems.length} منتجات
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <button onclick="openProductModal(null, '${category.replace(/'/g, "\\'")}')" class="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-primary-600 hover:bg-primary-50 transition" title="إضافة منتج جديد داخل قسم ${category}">
+                                    <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+                                    <span class="hidden sm:inline">إضافة منتج</span>
+                                </button>
+                                <button onclick="selectCategory('${category.replace(/'/g, "\\'")}')" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-primary-600 transition">
+                                    <span>عرض القسم فقط</span>
+                                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- شبكة منتجات هذا القسم فقط -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            ${categoryItems.map(product => createProductCardHtml(product)).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 6. إضافة وتعديل وحذف المنتجات (CRUD)
+        // ==========================================
+        function populateCategorySelect(selectedValue = null) {
+            const select = document.getElementById('productCategory');
+            const categories = getAllUniqueCategories();
+            
+            let optionsHtml = categories.map(cat => 
+                `<option value="${cat}">${cat}</option>`
+            ).join('');
+            
+            optionsHtml += `<option value="__NEW__" class="font-bold text-primary-600">+ إضافة قسم جديد...</option>`;
+            select.innerHTML = optionsHtml;
+
+            if (selectedValue && categories.includes(selectedValue)) {
+                select.value = selectedValue;
+            }
+            handleCategorySelectChange();
+        }
+
+        function handleCategorySelectChange() {
+            const select = document.getElementById('productCategory');
+            const newCatWrapper = document.getElementById('newCategoryWrapper');
+            const newCatInput = document.getElementById('newCategoryInput');
+
+            if (select.value === '__NEW__') {
+                newCatWrapper.classList.remove('hidden');
+                newCatInput.required = true;
+                newCatInput.focus();
+            } else {
+                newCatWrapper.classList.add('hidden');
+                newCatInput.required = false;
+                newCatInput.value = '';
+            }
+        }
+
+        function openProductModal(productId = null, preselectedCategory = null) {
+            const modal = document.getElementById('productModal');
+            const form = document.getElementById('productForm');
+            const title = document.getElementById('modalTitle');
+            const submitBtnText = document.getElementById('submitBtnText');
+
+            form.reset();
+            document.getElementById('productId').value = '';
+            populateCategorySelect();
+
+            if (productId) {
+                // وضع التعديل
+                const product = products.find(p => p.id === productId);
+                if (!product) return;
+
+                document.getElementById('productId').value = product.id;
+                document.getElementById('productName').value = product.name;
+                document.getElementById('productPrice').value = product.price;
+                populateCategorySelect(product.category);
+                document.getElementById('productImage').value = product.image || '';
+                document.getElementById('productDescription').value = product.description;
+
+                title.innerHTML = `<i data-lucide="edit-3" class="w-6 h-6 text-amber-500"></i><span>تعديل بيانات المنتج</span>`;
+                submitBtnText.textContent = 'حفظ التعديلات';
+            } else {
+                // وضع الإضافة
+                const targetCategory = preselectedCategory || (selectedCategory !== 'الكل' ? selectedCategory : 'الشنط');
+                populateCategorySelect(targetCategory);
+                title.innerHTML = `<i data-lucide="package-plus" class="w-6 h-6 text-primary-600"></i><span>إضافة منتج جديد</span>`;
+                submitBtnText.textContent = 'إضافة المنتج';
+            }
+
+            updateImagePreview();
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.add('hidden');
+        }
+
+        function generateSmartImage() {
+            const name = document.getElementById('productName').value.trim() || 'منتج جديد';
+            let category = document.getElementById('productCategory').value;
+            if (category === '__NEW__') {
+                category = document.getElementById('newCategoryInput').value.trim() || 'عام';
+            }
+            const smartUrl = getSmartFallbackImage(name, category);
+            document.getElementById('productImage').value = smartUrl;
+            updateImagePreview();
+        }
+
+        function updateImagePreview() {
+            const url = document.getElementById('productImage').value.trim();
+            const name = document.getElementById('productName').value.trim() || 'معاينة';
+            let category = document.getElementById('productCategory').value;
+            if (category === '__NEW__') {
+                category = document.getElementById('newCategoryInput').value.trim() || 'عام';
+            }
+            const preview = document.getElementById('imagePreview');
+
+            preview.src = url || getSmartFallbackImage(name, category);
+            preview.onerror = () => {
+                preview.src = getSmartFallbackImage(name, category);
+            };
+        }
+
+        function handleProductSubmit(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('productId').value;
+            const name = document.getElementById('productName').value.trim();
+            const price = parseFloat(document.getElementById('productPrice').value);
+            let category = document.getElementById('productCategory').value;
+            
+            if (category === '__NEW__') {
+                const customCat = document.getElementById('newCategoryInput').value.trim();
+                if (!customCat) {
+                    showToast('يرجى إدخال اسم القسم الجديد', 'error');
+                    return;
+                }
+                category = customCat;
+            }
+
+            let image = document.getElementById('productImage').value.trim();
+            const description = document.getElementById('productDescription').value.trim();
+
+            if (!image) {
+                image = getSmartFallbackImage(name, category);
+            }
+
+            if (id) {
+                // تحديث منتج موجود
+                const index = products.findIndex(p => p.id === id);
+                if (index !== -1) {
+                    products[index] = {
+                        ...products[index],
+                        name,
+                        price,
+                        category,
+                        image,
+                        description
+                    };
+                    showToast('تم تحديث بيانات المنتج بنجاح');
+                }
+            } else {
+                // إضافة منتج جديد
+                const newProduct = {
+                    id: 'prod-' + Date.now(),
+                    name,
+                    price,
+                    category,
+                    image,
+                    description,
+                    createdAt: Date.now()
+                };
+                products.unshift(newProduct);
+                showToast(`تمت إضافة المنتج إلى قسم "${category}"`);
+            }
+
+            saveProductsToStorage();
+            renderCategories();
+            populateCategorySelect();
+            filterProducts();
+            closeProductModal();
+        }
+
+        // نافذة تأكيد الحذف المخصصة (بديل آمن وأنيق لـ confirm)
+        function confirmDeleteProduct(id, name) {
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmTitle').textContent = 'حذف المنتج';
+            document.getElementById('confirmMessage').textContent = `هل أنت متأكد من حذف "${name}"؟ لن تتمكن من استرجاعه بعد الحذف.`;
+            
+            const actionBtn = document.getElementById('confirmActionBtn');
+            actionBtn.onclick = () => {
+                deleteProduct(id);
+                closeConfirmModal();
+            };
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function deleteProduct(id) {
+            products = products.filter(p => p.id !== id);
+            saveProductsToStorage();
+            renderCategories();
+            filterProducts();
+            showToast('تم حذف المنتج من الكتالوج');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+        }
+
+        // ==========================================
+        // 7. عرض التفاصيل السريعة (Quick View)
+        // ==========================================
+        function openDetailsModal(id) {
+            const product = products.find(p => p.id === id);
+            if (!product) return;
+
+            const fallbackUrl = getSmartFallbackImage(product.name, product.category);
+            const imgUrl = product.image || fallbackUrl;
+
+            const content = document.getElementById('detailsContent');
+            content.innerHTML = `
+                <div class="bg-slate-100 aspect-square md:aspect-auto h-full">
+                    <img src="${imgUrl}" alt="${product.name}" onerror="this.src='${fallbackUrl}'" class="w-full h-full object-cover">
+                </div>
+                <div class="p-6 sm:p-8 flex flex-col justify-between">
+                    <div>
+                        <span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-primary-50 text-primary-700 mb-3">
+                            ${product.category}
+                        </span>
+                        <h2 class="text-2xl font-extrabold text-slate-900 mb-3">${product.name}</h2>
+                        <div class="text-2xl font-extrabold text-primary-600 mb-4">
+                            ${Number(product.price).toLocaleString('ar-EG')} <span class="text-sm font-bold text-slate-500">ج.م</span>
+                        </div>
+                        <div class="border-t border-slate-100 pt-4">
+                            <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">وصف المنتج</h4>
+                            <p class="text-sm text-slate-600 leading-relaxed">${product.description}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 pt-4 border-t border-slate-100 flex items-center gap-3">
+                        <button onclick="closeDetailsModal(); openProductModal('${product.id}')" class="flex-1 py-2.5 px-4 rounded-xl text-sm font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center justify-center gap-2">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            تعديل المنتج
+                        </button>
+                        <button onclick="closeDetailsModal()" class="flex-1 py-2.5 px-4 rounded-xl text-sm font-bold bg-primary-600 text-white hover:bg-primary-700 transition">
+                            إغلاق
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('detailsModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').classList.add('hidden');
+        }
+
+        // ==========================================
+        // 8. تصدير واستيراد البيانات (JSON) وإعادة الضبط
+        // ==========================================
+        function exportData() {
+            const dataStr = JSON.stringify(products, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `products-catalog-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showToast('تم تصدير ملف المنتجات بصيغة JSON');
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (Array.isArray(imported)) {
+                        // التحقق من صحة الحقول الأساسية
+                        const validItems = imported.filter(item => item.name && item.price !== undefined);
+                        if (validItems.length > 0) {
+                            products = validItems;
+                            saveProductsToStorage();
+                            renderCategories();
+                            filterProducts();
+                            showToast(`تم استيراد ${validItems.length} منتج بنجاح`);
+                        } else {
+                            showToast('الملف لا يحتوي على منتجات صالحة', 'error');
+                        }
+                    } else {
+                        showToast('صيغة ملف JSON غير صحيحة', 'error');
+                    }
+                } catch (err) {
+                    showToast('تعذر قراءة الملف، تأكد من أنه بصيغة JSON صحيحة', 'error');
+                }
+                event.target.value = ''; // إعادة تعيين حقل الملف
+            };
+            reader.readAsText(file);
+        }
+
+        function openResetConfirmModal() {
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmTitle').textContent = 'إعادة ضبط البيانات';
+            document.getElementById('confirmMessage').textContent = 'سيتم مسح التعديلات الحالية واستعادة المنتجات الافتراضية. هل تريد المتابعة؟';
+            
+            const actionBtn = document.getElementById('confirmActionBtn');
+            actionBtn.onclick = () => {
+                products = [...DEFAULT_PRODUCTS];
+                selectedCategory = 'الكل';
+                saveProductsToStorage();
+                renderCategories();
+                populateCategorySelect();
+                filterProducts();
+                closeConfirmModal();
+                showToast('تمت استعادة البيانات الافتراضية');
+            };
+
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        // ==========================================
+        // 9. نظام الإشعارات (Toast)
+        // ==========================================
+        let toastTimeout;
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMessage.textContent = message;
+            if (type === 'error') {
+                toastIcon.setAttribute('data-lucide', 'alert-circle');
+                toastIcon.className = 'w-5 h-5 text-rose-400';
+            } else {
+                toastIcon.setAttribute('data-lucide', 'check-circle-2');
+                toastIcon.className = 'w-5 h-5 text-emerald-400';
+            }
+            lucide.createIcons();
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        // تشغيل التطبيق عند تحميل الصفحة
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
